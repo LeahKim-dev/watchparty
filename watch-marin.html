@@ -356,13 +356,22 @@
     display: flex;
     animation: fadeIn 0.3s ease;
   }
+  #winner-custom-vid {
+    width: 95vw;
+    max-width: 1400px;
+    height: 80vh;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 0 50px rgba(200, 16, 46, 0.6);
+}
 </style>
 </head>
 <body>
 
 <div class="winner-overlay" id="winner-overlay">
   <div class="winner-container">
-    <img id="winner-custom-img" src="" alt="Winner Celebration">
+    <video id="winner-custom-vid" style="display:none;" autoplay loop muted playsinline></video>
+    <!-- <img id="winner-custom-img" src="" alt="Winner Celebration"> -->
     <div class="winner-text-big" id="winner-text-big"></div>
   </div>
 </div>
@@ -470,7 +479,7 @@
         name: "T1",
         region: "LCK · Korea",
         logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/t1_logo.svg",
-        winnerImgUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/t1/t1win_v5.jpg",
+        winnerImgUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/t1/video.mp4",
         hasBg: true,
         color: "#aa0025", 
         bgStyle: "#111111",
@@ -673,25 +682,35 @@
   }
 
   // 위너 모달 오버레이 바인딩 + 폭죽 컬러 동적 할당
-  function showWinner(name, colors, winnerCustomImg) {
+  function showWinner(name, colors, winnerCustomVid) {
     const overlay = document.getElementById('winner-overlay');
     const txt = document.getElementById('winner-text-big');
-    const img = document.getElementById('winner-custom-img');
-
-    if (img) {
-      if (winnerCustomImg) {
-        txt.style.opacity = "0";
-        img.onload = () => {
-            txt.style.opacity = "1";
-        };
-        img.src = winnerCustomImg;
-        img.style.display = 'block';
-        img.closest('.winner-container').classList.add('has-photo');
-      } else {
-        img.style.display = 'none';
-        img.closest('.winner-container').classList.remove('has-photo');
-      }
+    const vid = document.getElementById('winner-custom-vid');
+    if (winnerCustomImg) {
+        vid.src = winnerCustomImg; // .mp4 등 동영상 파일 URL
+        vid.style.display = 'block';
+        vid.play();
+    } else {
+        vid.style.display = 'none';
+        vid.pause();
+        vid.currentTime = 0; // 다음 재생을 위해 영상 위치를 처음으로 초기화
     }
+    // const img = document.getElementById('winner-custom-img');
+
+    // if (img) {
+    //   if (winnerCustomImg) {
+    //     txt.style.opacity = "0";
+    //     img.onload = () => {
+    //         txt.style.opacity = "1";
+    //     };
+    //     img.src = winnerCustomImg;
+    //     img.style.display = 'block';
+    //     img.closest('.winner-container').classList.add('has-photo');
+    //   } else {
+    //     img.style.display = 'none';
+    //     img.closest('.winner-container').classList.remove('has-photo');
+    //   }
+    // }
 
     if (txt) {
         const shadowColor = (Array.isArray(colors) && colors.length > 0) ? colors[0] : colors;
