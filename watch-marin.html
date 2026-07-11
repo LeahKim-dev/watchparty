@@ -369,7 +369,7 @@
 
 <div class="top-bar">
   <div class="event-wrapper" style="display: flex; align-items: center; gap: 10px;">
-    <div class="event-pill">MSI 2026 · FINAL</div>
+    <div class="event-pill">MSI 2026 · 브래킷 스테이지</div>
     <button class="btn-timer btn-bracket-top" onclick="openScheduleModal()">📅</button>
     <button id="btn-bracket" class="btn-timer btn-bracket-top" onclick="openBracketModal()">대진표</button>
   </div>
@@ -457,7 +457,7 @@
 
 <script>
   const teamLeft = 'hle';
-  const teamRight = 'blg';
+  const teamRight = 'lyon';
   // 사용 가능한 키: 't1', 'furia', 'tsw', 'lyon', 'hle', 'g2', 'tes', 'blg'
 
 
@@ -510,7 +510,6 @@
         name: "HLE",
         region: "LCK · Korea",
         logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/hle_logo.svg",
-        winnerImgUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/t1/t1win_v6.jpg",
         hasBg: true,
         color: "#f06f25",
         bgStyle: "#fdfbfb",
@@ -662,7 +661,7 @@
   function checkWinner() {
     const el = document.getElementById('winner-text');
     if (scoreLeft === 3) {
-      el.textContent = `🏆 ${dbTeams[teamLeft].name} MSI 2026 CHAMPIONS!`;
+      el.textContent = `🏆 ${dbTeams[teamLeft].name} 승리!`;
       showWinner(dbTeams[teamLeft].name, dbTeams[teamLeft].confetti, dbTeams[teamLeft].winnerImgUrl);
     } else if (scoreRight === 3) {
       el.textContent = `🏆 ${dbTeams[teamRight].name} 승리!`;
@@ -697,12 +696,12 @@
         const shadowColor = (Array.isArray(colors) && colors.length > 0) ? colors[0] : colors;
         txt.style.textShadow = `0 4px 25px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,1), 0 0 15px ${shadowColor}`;
 
-    txt.innerHTML = '👑 ' + name + '<br><span style="font-size: 0.7em; font-weight: 600;">MSI 2026 CHAMPIONS!</span>';
+    txt.textContent = '🏆 ' + name + ' WIN!';
     if (overlay) {
         overlay.classList.add('show');
     }
 
-    if (name === 'HLE') {
+    if (name === 'T1') {
       const duration = 6000;
       const animationEnd = Date.now() + duration;
 
