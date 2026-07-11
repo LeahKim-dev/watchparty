@@ -369,7 +369,7 @@
 
 <div class="top-bar">
   <div class="event-wrapper" style="display: flex; align-items: center; gap: 10px;">
-    <div class="event-pill">MSI 2026 · 브래킷 스테이지</div>
+    <div class="event-pill">MSI 2026 · FINAL</div>
     <button class="btn-timer btn-bracket-top" onclick="openScheduleModal()">📅</button>
     <button id="btn-bracket" class="btn-timer btn-bracket-top" onclick="openBracketModal()">대진표</button>
   </div>
@@ -510,6 +510,7 @@
         name: "HLE",
         region: "LCK · Korea",
         logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/hle_logo.svg",
+        winnerImgUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/t1/t1win_v6.jpg",
         hasBg: true,
         color: "#f06f25",
         bgStyle: "#fdfbfb",
@@ -696,12 +697,13 @@
         const shadowColor = (Array.isArray(colors) && colors.length > 0) ? colors[0] : colors;
         txt.style.textShadow = `0 4px 25px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,1), 0 0 15px ${shadowColor}`;
 
-    txt.textContent = '🏆 ' + name + ' WIN!';
-    if (overlay) {
-        overlay.classList.add('show');
-    }
+        txt.innerHTML = '🏆 ' + name + ' 🏆<br><span style="font-size: 0.7em; font-weight: 600;">MSI 2026 CHAMPIONS!</span>';
 
-    if (name === 'T1') {
+        if (overlay) {
+            overlay.classList.add('show');
+        }
+
+    if (name === 'HLE') {
       const duration = 6000;
       const animationEnd = Date.now() + duration;
 
