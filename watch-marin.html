@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="page-title">MSI 2026</title>
+  <title id="page-title">2026 LoL KeSPA Cup</title>
   
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
@@ -369,7 +369,7 @@
 
 <div class="top-bar">
   <div class="event-wrapper" style="display: flex; align-items: center; gap: 10px;">
-    <div class="event-pill">2026 Kespa Cup</div>
+    <div class="event-pill">2026 LoL KeSPA Cup</div>
     <button class="btn-timer btn-bracket-top" onclick="openScheduleModal()">📅</button>
     <button id="btn-bracket" class="btn-timer btn-bracket-top" onclick="openBracketModal()">대진표</button>
   </div>
@@ -456,9 +456,9 @@
 </div>
 
 <script>
-  const teamLeft = 'lyon';
-  const teamRight = 'tsw';
-  // 사용 가능한 키: 't1', 'geng', 'kt', 'dk', 'brion', 'ns','bfx', 'krx','hle'
+  const teamLeft = 'hle';
+  const teamRight = 'dns';
+  // 사용 가능한 키: 't1', 'geng', 'kt', 'dk', 'bro','ns','bfx', 'krx','hle','dns'
   // ==========================================
   // 데이터 마스터 사전 (팀 정보 통합 관리)
   // ==========================================
@@ -481,7 +481,7 @@
         hasBg: true,
         color: "#a48528", // 젠지 골드
         bgStyle: "#fdfbfb",
-        shadow: "rgba(170,138,76,0.4)",
+        shadow: "rgba(164, 133, 40,0.4)",
         confetti: ['#a48528','#000000','#ffffff']
       },
       kt: {
@@ -489,50 +489,50 @@
         region: "LCK · Korea",
         logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/kt_logo.webp",
         hasBg: true,
-        color: "#fc0014", // KT 레드
+        color: "#fc0014",
         bgStyle: "#fdfbfb",
-        shadow: "rgba(230,0,18,0.4)",
-        confetti: ['#fc0014','#000000','#ffffff']
+        shadow: "rgba(245, 135, 147, 0.4)",
+        confetti: ['#ff8a94','#fc0014','#ffffff']
       },
       dk: {
         name: "Dplus KIA",
         region: "LCK · Korea",
         logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/dk_logo.png",
         hasBg: true,
-        color: "#000000", // 디플러스 블랙
+        color: "#9efdf6",
         bgStyle: "#fdfbfb",
-        shadow: "rgba(0,0,0,0.3)",
-        confetti: ['#000000','#00ffcc','#ffffff'] // 시그니처 민트색 포인트 포함
+        shadow: "rgba(158, 253, 246,0.4)",
+        confetti: ['#54d6ce','#9efdf6','#ffffff']
       },
-      brion: {
-        name: "OKSavingsBank BRION",
+      bro: {
+        name: "BRO",
         region: "LCK · Korea",
         logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/brion_logo.png",
         hasBg: true,
         color: "#04492c", // 브리온 그린
         bgStyle: "#fdfbfb",
         shadow: "rgba(0,74,47,0.4)",
-        confetti: ['#04492c','#ffcc00','#ffffff']
+        confetti: ['#04492cbb','#6bd3a8','#ffffff']
       },
       ns: {
-        name: "NS RedForce",
+        name: "NS",
         region: "LCK · Korea",
         logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/ns_logo.svg",
         hasBg: true,
         color: "#e90029", // 농심 레드
         bgStyle: "#fdfbfb",
-        shadow: "rgba(222,31,38,0.4)",
-        confetti: ['#e90029','#ffffff','#000000']
+        shadow: "rgba(253, 94, 99, 0.4)",
+        confetti: ['#ff849a','#ffffff','#e90029']
       },
       bfx: {
-        name: "BNK FearX",
+        name: "BFX",
         region: "LCK · Korea",
         logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/bfx_logo.svg",
         hasBg: true,
-        color: "#d00c2b", // 피어엑스 폭스 오렌지 (구 KRX 브랜드 변경 반영)
+        color: "#fdcf22", // 피어엑스 폭스 오렌지 (구 KRX 브랜드 변경 반영)
         bgStyle: "#fdfbfb",
-        shadow: "rgba(229,83,0,0.4)",
-        confetti: ['#d00c2b','#f7d026','#ffffff']
+        shadow: "rgba(253, 207, 34, 0.4)",
+        confetti: ['#fdcf22','#ffea9f','#ffffff']
       },
       krx: {
         name: "KRX",
@@ -542,7 +542,7 @@
         color: "#202e5c", // DRX 블루
         bgStyle: "#fdfbfb",
         shadow: "rgba(94,148,212,0.4)",
-        confetti: ['#202e5c','#ffffff','#001b48','#e2007f']
+        confetti: ['#4d60a1','#ffffff','#7389d1','#e2007f']
       },
       hle: {
         name: "HLE",
@@ -554,7 +554,17 @@
         shadow: "rgba(255,69,0,0.4)",
         confetti: ['#ff9a60', '#ffecac', '#ffffff']
       },
-      // furia: {
+      dns: {
+        name: "DNS",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/dns_logo.png",
+        hasBg: true,
+        color: "#2457ef",
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(36, 87, 239,0.4)",
+        confetti: ['#dbe4ff', '#85a3ff', '#ffffff']
+      },
+    // furia: {
       //   name: "FURIA",
       //   region: "CBLOL · Brazil",
       //   logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/furia_logo.webp",
