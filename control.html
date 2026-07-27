@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>방송 컨트롤 패널</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f0f0;
+    --muted: #888899;
+    --accent: #3a7aff;
+    --danger: #ff4d4d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+  .panel {
+    width: 100%;
+    max-width: 520px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+  }
+  h1 { font-size: 20px; margin-bottom: 1.2rem; }
+  .row { display: flex; gap: 10px; margin-bottom: 12px; }
+  input {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+    padding: 12px 14px;
+    outline: none;
+  }
+  input:focus { border-color: var(--accent); }
+  select {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 15px;
+    padding: 12px 14px;
+    outline: none;
+  }
+  select:focus { border-color: var(--accent); }
+  button {
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 20px;
+    cursor: pointer;
+  }
+  button:hover { background: #2a6aef; }
+  button.secondary {
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+  }
+  button.secondary:hover { background: rgba(255,255,255,0.16); }
+  button.danger { background: var(--danger); }
+  .status { font-size: 13px; color: var(--muted); margin-top: 8px; min-height: 18px; }
+
+  #login-view, #control-view { display: none; }
+  #login-view.active, #control-view.active { display: block; }
+
+  .match-id-row { margin-bottom: 20px; }
+
+  .score-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .team-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+  }
+  .team-box .label { font-size: 13px; color: var(--muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .team-box .score { font-size: 48px; font-weight: 800; margin-bottom: 12px; font-variant-numeric: tabular-nums; }
+  .btn-group { display: flex; gap: 8px; justify-content: center; }
+  .btn-round {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    font-size: 20px;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .timer-block {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .timer-display { font-size: 40px; font-weight: 700; text-align: center; margin-bottom: 12px; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .timer-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
+  .manual-time { display: flex; gap: 8px; align-items: center; justify-content: center; }
+  .manual-time input { max-width: 70px; text-align: center; flex: none; }
+
+  .footer-row { display: flex; justify-content: space-between; align-items: center; }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>🎮 방송 컨트롤 패널</h1>
+
+  <!-- 로그인 화면 -->
+  <div id="login-view" class="active">
+    <div class="row">
+      <input type="email" id="login-email" placeholder="이메일">
+    </div>
+    <div class="row">
+      <input type="password" id="login-password" placeholder="비밀번호">
+    </div>
+    <button onclick="doLogin()">로그인</button>
+    <div class="status" id="login-status"></div>
+  </div>
+
+  <!-- 컨트롤 화면 -->
+  <div id="control-view">
+    <div class="match-id-row">
+      <div class="row">
+        <input type="text" id="match-id" placeholder="matchId" value="live">
+        <button class="secondary" onclick="connectMatch()">연결</button>
+      </div>
+      <div class="status" id="connect-status"></div>
+    </div>
+
+    <div class="row" style="margin-bottom: 20px;">
+      <select id="select-left"></select>
+      <select id="select-right"></select>
+      <button class="secondary" onclick="applyTeams()">팀 적용</button>
+    </div>
+
+    <div class="score-block">
+      <div class="team-box">
+        <div class="label" id="label-left">LEFT</div>
+        <div class="score" id="score-left">0</div>
+        <div class="btn-group">
+          <button class="btn-round secondary" onclick="changeScore('left',-1)">−</button>
+          <button class="btn-round" onclick="changeScore('left',1)">+</button>
+        </div>
+      </div>
+      <div class="team-box">
+        <div class="label" id="label-right">RIGHT</div>
+        <div class="score" id="score-right">0</div>
+        <div class="btn-group">
+          <button class="btn-round secondary" onclick="changeScore('right',-1)">−</button>
+          <button class="btn-round" onclick="changeScore('right',1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="timer-block" style="margin-bottom:20px; display:flex; align-items:center; justify-content:center; gap:14px;">
+      <span style="font-size:14px; color:var(--muted);">현재 게임(세트)</span>
+      <button class="btn-round secondary" onclick="changeGameNum(-1)">−</button>
+      <span id="game-num-display" style="font-size:24px; font-weight:700; min-width:28px; text-align:center;">1</span>
+      <button class="btn-round" onclick="changeGameNum(1)">+</button>
+    </div>
+
+    <div class="timer-block" style="margin-bottom:20px;">
+      <div class="status" id="winner-status" style="text-align:center; font-weight:600; font-size:15px; color:var(--accent); min-height:20px; margin-bottom:10px;"></div>
+      <div class="timer-controls">
+        <button onclick="setWinner('left')">🏆 왼쪽 승리 확정</button>
+        <button onclick="setWinner('right')">🏆 오른쪽 승리 확정</button>
+        <button class="secondary" onclick="setWinner(null)">승자 취소</button>
+      </div>
+    </div>
+
+    <div class="timer-block">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-controls">
+        <button onclick="startTimer()">▶ 시작</button>
+        <button class="secondary" onclick="pauseTimer()">⏸ 정지</button>
+        <button class="secondary" onclick="resetTimer()">↺ 초기화</button>
+      </div>
+      <div class="manual-time">
+        <input type="number" id="manual-min" min="0" max="99" value="0">
+        <span>:</span>
+        <input type="number" id="manual-sec" min="0" max="59" value="0">
+        <button class="secondary" onclick="setManualTime()">설정</button>
+      </div>
+    </div>
+
+    <div class="footer-row">
+      <button class="danger" onclick="resetAll()">전체 초기화</button>
+      <button class="secondary" onclick="doLogout()">로그아웃</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ==========================================
+  // Firebase 설정 — firebase-setup-guide.md 4번에서 받은 값으로 교체하세요
+  // ==========================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyC7TjpxZsNSutdKzcggoOAP-cZ2ygDjwiQ",
+    authDomain: "watch-party-21a6e.firebaseapp.com",
+    databaseURL: "https://watch-party-21a6e-default-rtdb.firebaseio.com",
+    projectId: "watch-party-21a6e",
+    storageBucket: "watch-party-21a6e.firebasestorage.app",
+    messagingSenderId: "416861431344",
+    appId: "1:416861431344:web:cbd747b34359c9077e2ff5"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.database();
+
+  // overlay.html의 dbTeams와 동일한 팀 코드 목록 (이름만 표시용으로 사용)
+  const teamOptions = {
+    t1: "T1", geng: "Gen.G", kt: "KT Rolster", dk: "Dplus KIA",
+    bro: "BRO", ns: "NS", bfx: "BFX", krx: "KRX", hle: "HLE", dns: "DNS"
+  };
+
+  function populateTeamSelects() {
+    const selLeft = document.getElementById('select-left');
+    const selRight = document.getElementById('select-right');
+    selLeft.innerHTML = '';
+    selRight.innerHTML = '';
+    Object.entries(teamOptions).forEach(([code, name]) => {
+      selLeft.appendChild(new Option(name, code));
+      selRight.appendChild(new Option(name, code));
+    });
+  }
+  populateTeamSelects();
+
+  function applyTeams() {
+    localState.teamLeft = document.getElementById('select-left').value;
+    localState.teamRight = document.getElementById('select-right').value;
+    document.getElementById('label-left').textContent = teamOptions[localState.teamLeft];
+    document.getElementById('label-right').textContent = teamOptions[localState.teamRight];
+    pushState();
+  }
+
+  let currentMatchRef = null;
+  let localState = {
+    teamLeft: '', teamRight: '',
+    scoreLeft: 0, scoreRight: 0,
+    gameNum: 1,
+    winner: null, // 'left' | 'right' | null — 오직 setWinner()로 컨트롤에서 수동 지정한다
+    timerBaseSec: 0,
+    timerRunning: false,
+    timerStartedAtServer: null
+  };
+  let displayInterval = null;
+
+  // ---------- 로그인 ----------
+  function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pw = document.getElementById('login-password').value;
+    document.getElementById('login-status').textContent = '로그인 중...';
+    auth.signInWithEmailAndPassword(email, pw)
+      .catch(err => {
+        document.getElementById('login-status').textContent = '로그인 실패: ' + err.message;
+      });
+  }
+
+  function doLogout() {
+    auth.signOut();
+  }
+
+  auth.onAuthStateChanged(user => {
+    document.getElementById('login-view').classList.toggle('active', !user);
+    document.getElementById('control-view').classList.toggle('active', !!user);
+    if (user) {
+      // 마지막으로 쓴 matchId 기억해서 자동 채워주기
+      const savedId = localStorage.getItem('lastMatchId');
+      if (savedId) {
+        document.getElementById('match-id').value = savedId;
+        connectMatch();
+      }
+    } else {
+      if (displayInterval) clearInterval(displayInterval);
+    }
+  });
+
+  // ---------- 경기 연결 ----------
+  function connectMatch() {
+    const matchId = document.getElementById('match-id').value.trim();
+    if (!matchId) return;
+    localStorage.setItem('lastMatchId', matchId);
+
+    if (currentMatchRef) currentMatchRef.off();
+    currentMatchRef = db.ref('matches/' + matchId);
+
+    document.getElementById('connect-status').textContent = '연결됨: ' + matchId;
+
+    currentMatchRef.on('value', snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        localState = Object.assign(localState, data);
+        renderScores();
+        if (localState.teamLeft) {
+          document.getElementById('select-left').value = localState.teamLeft;
+          document.getElementById('label-left').textContent = teamOptions[localState.teamLeft] || 'LEFT';
+        }
+        if (localState.teamRight) {
+          document.getElementById('select-right').value = localState.teamRight;
+          document.getElementById('label-right').textContent = teamOptions[localState.teamRight] || 'RIGHT';
+        }
+      }
+      startDisplayLoop();
+    });
+  }
+
+  function pushState() {
+    if (!currentMatchRef) {
+      alert('먼저 matchId를 입력하고 연결하세요.');
+      return;
+    }
+    currentMatchRef.set(localState);
+  }
+
+  function renderScores() {
+    document.getElementById('score-left').textContent = localState.scoreLeft;
+    document.getElementById('score-right').textContent = localState.scoreRight;
+    document.getElementById('game-num-display').textContent = localState.gameNum;
+    renderWinnerStatus();
+  }
+
+  function renderWinnerStatus() {
+    const el = document.getElementById('winner-status');
+    if (!el) return;
+    if (localState.winner === 'left') {
+      el.textContent = '🏆 ' + (teamOptions[localState.teamLeft] || 'LEFT') + ' 승리 확정';
+    } else if (localState.winner === 'right') {
+      el.textContent = '🏆 ' + (teamOptions[localState.teamRight] || 'RIGHT') + ' 승리 확정';
+    } else {
+      el.textContent = '';
+    }
+  }
+
+  // 승자는 점수와 무관하게 오직 이 함수를 통해 컨트롤에서 수동으로 지정한다.
+  // 지정된 값이 그대로 Firebase에 저장되고, overlay는 이 값을 그대로 표시만 한다.
+  function setWinner(side) {
+    localState.winner = side; // 'left' | 'right' | null
+    renderWinnerStatus();
+    pushState();
+  }
+
+  // ---------- 스코어 ----------
+  function changeScore(side, delta) {
+    if (side === 'left') {
+      localState.scoreLeft = Math.max(0, Math.min(100, localState.scoreLeft + delta));
+    } else {
+      localState.scoreRight = Math.max(0, Math.min(100, localState.scoreRight + delta));
+    }
+    renderScores();
+    pushState();
+  }
+
+  // ---------- 게임(세트) 번호 — 점수와 별개로 컨트롤에서 직접 조정 ----------
+  function changeGameNum(delta) {
+    localState.gameNum = Math.max(1, (localState.gameNum || 1) + delta);
+    renderScores();
+    pushState();
+  }
+
+  // ---------- 타이머 ----------
+  // 서버 시각 기준으로 관리: timerRunning이면 timerStartedAtServer(서버 타임스탬프) 기록,
+  // 경과시간 = (현재 서버시각 - timerStartedAtServer)/1000 + timerBaseSec
+  function getServerNow() {
+    return Date.now() + (firebase.database.ServerValue !== undefined ? serverTimeOffset : 0);
+  }
+
+  let serverTimeOffset = 0;
+  db.ref('.info/serverTimeOffset').on('value', snap => {
+    serverTimeOffset = snap.val() || 0;
+  });
+
+  function computeCurrentTimerSec() {
+    if (localState.timerRunning && localState.timerStartedAtServer) {
+      const elapsed = Math.floor((getServerNow() - localState.timerStartedAtServer) / 1000);
+      return localState.timerBaseSec + Math.max(0, elapsed);
+    }
+    return localState.timerBaseSec;
+  }
+
+  function startDisplayLoop() {
+    if (displayInterval) clearInterval(displayInterval);
+    displayInterval = setInterval(() => {
+      const sec = computeCurrentTimerSec();
+      document.getElementById('timer-display').textContent =
+        String(Math.floor(sec/60)).padStart(2,'0') + ':' + String(sec%60).padStart(2,'0');
+    }, 500);
+  }
+
+  function startTimer() {
+    if (localState.timerRunning) return;
+    localState.timerRunning = true;
+    localState.timerStartedAtServer = getServerNow();
+    pushState();
+  }
+
+  function pauseTimer() {
+    if (!localState.timerRunning) return;
+    localState.timerBaseSec = computeCurrentTimerSec();
+    localState.timerRunning = false;
+    localState.timerStartedAtServer = null;
+    pushState();
+  }
+
+  function resetTimer() {
+    localState.timerRunning = false;
+    localState.timerBaseSec = 0;
+    localState.timerStartedAtServer = null;
+    pushState();
+  }
+
+  function setManualTime() {
+    const m = parseInt(document.getElementById('manual-min').value) || 0;
+    const s = parseInt(document.getElementById('manual-sec').value) || 0;
+    const wasRunning = localState.timerRunning;
+    localState.timerBaseSec = m*60 + Math.min(s,59);
+    localState.timerRunning = false;
+    localState.timerStartedAtServer = null;
+    pushState();
+    if (wasRunning) startTimer();
+  }
+
+  // ---------- 전체 초기화 ----------
+  function resetAll() {
+    if (!confirm('전체 초기화하시겠습니까?')) return;
+    localState.scoreLeft = 0;
+    localState.scoreRight = 0;
+    localState.gameNum = 1;
+    localState.winner = null;
+    localState.timerBaseSec = 0;
+    localState.timerRunning = false;
+    localState.timerStartedAtServer = null;
+    renderScores();
+    pushState();
+  }
+</script>
+</body>
+</html>
