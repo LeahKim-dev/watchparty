@@ -265,7 +265,7 @@
         <span class="series-sep">:</span>
         <span class="series-num" id="set-right">0</span>
       </div>
-      <div class="series-format">Best of 1</div>
+      <div class="series-format" id="series-format">0 : 0</div>
       <div class="live-badge"><span class="live-dot"></span> Live</div>
     </div>
 
@@ -295,7 +295,7 @@
     <div class="timer-box">
       <div class="box-label">현재 게임</div>
       <div class="game-num-display" id="game-num">1<span class="set-text">세트</span></div>
-      <div class="game-num-sub">Game <span id="game-num-sub">1</span> of 1</div>
+      <div class="game-num-sub">Game <span id="game-num-sub">1</span> of <span id="best-of-sub">1</span></div>
     </div>
   </div>
 
@@ -316,7 +316,7 @@
   // Firebase 설정 — firebase-setup-guide.md 4번에서 받은 값으로 교체하세요
   const firebaseConfig = {
     apiKey: "AIzaSyC7TjpxZsNSutdKzcggoOAP-cZ2ygDjwiQ",
-    authDomain: "watchparty-21a6e.firebaseapp.com",
+    authDomain: "watch-party-21a6e.firebaseapp.com",
     databaseURL: "https://watch-party-21a6e-default-rtdb.firebaseio.com",
     projectId: "watch-party-21a6e",
     storageBucket: "watch-party-21a6e.firebasestorage.app",
@@ -336,7 +336,7 @@
       hle: { name: "HLE", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/hle_logo.svg", hasBg: true, color: "#f06f25", bgStyle: "#fdfbfb", shadow: "rgba(255,69,0,0.4)", confetti: ['#ff9a60', '#ffecac', '#ffffff'] },
       dns: { name: "DNS", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/dns_logo.png", hasBg: true, color: "#2457ef", bgStyle: "#fdfbfb", shadow: "rgba(36, 87, 239,0.4)", confetti: ['#dbe4ff', '#85a3ff', '#ffffff'] },
     };
-
+    
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
@@ -416,6 +416,12 @@
     const gameNum = data.gameNum || 1; // gameNum은 control에서 점수와 무관하게 수동 조정되는 값 — 점수로 역산하지 않음
     document.getElementById('game-num').innerHTML = gameNum + '<span class="set-text">세트</span>';
     document.getElementById('game-num-sub').textContent = gameNum;
+
+    const bestOf = data.bestOf || 1;
+    const setL = data.setScoreLeft || 0;
+    const setR = data.setScoreRight || 0;
+    document.getElementById('best-of-sub').textContent = bestOf;
+    document.getElementById('series-format').textContent = 'BO' + bestOf + ' · ' + setL + ' : ' + setR;
 
     checkWinner(data.winner);
     startDisplayLoop();

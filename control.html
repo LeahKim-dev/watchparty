@@ -78,6 +78,7 @@
     color: var(--text);
   }
   button.secondary:hover { background: rgba(255,255,255,0.16); }
+  button.secondary.active { background: var(--accent); color: #fff; }
   button.danger { background: var(--danger); }
   .status { font-size: 13px; color: var(--muted); margin-top: 8px; min-height: 18px; }
 
@@ -177,6 +178,33 @@
       </div>
     </div>
 
+    <div style="display:flex; justify-content:center; margin-bottom:20px;">
+      <button class="secondary" onclick="resetKillScore()">킬 스코어 초기화</button>
+    </div>
+
+    <div class="timer-block" style="margin-bottom:20px;">
+      <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px;">
+        <span style="font-size:14px; color:var(--muted); margin-right:4px;">경기 방식</span>
+        <button class="secondary" id="bo-btn-1" onclick="setBestOf(1)">BO1</button>
+        <button class="secondary" id="bo-btn-3" onclick="setBestOf(3)">BO3</button>
+        <button class="secondary" id="bo-btn-5" onclick="setBestOf(5)">BO5</button>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:center; gap:16px;">
+        <span style="font-size:14px; color:var(--muted);">세트 스코어</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn-round secondary" onclick="changeSetScore('left',-1)">−</button>
+          <span id="set-score-left-display" style="font-size:24px; font-weight:700; min-width:24px; text-align:center;">0</span>
+          <button class="btn-round" onclick="changeSetScore('left',1)">+</button>
+        </div>
+        <span style="font-size:20px; color:var(--muted);">:</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn-round secondary" onclick="changeSetScore('right',-1)">−</button>
+          <span id="set-score-right-display" style="font-size:24px; font-weight:700; min-width:24px; text-align:center;">0</span>
+          <button class="btn-round" onclick="changeSetScore('right',1)">+</button>
+        </div>
+      </div>
+    </div>
+
     <div class="timer-block" style="margin-bottom:20px; display:flex; align-items:center; justify-content:center; gap:14px;">
       <span style="font-size:14px; color:var(--muted);">현재 게임(세트)</span>
       <button class="btn-round secondary" onclick="changeGameNum(-1)">−</button>
@@ -262,7 +290,9 @@
   let currentMatchRef = null;
   let localState = {
     teamLeft: '', teamRight: '',
-    scoreLeft: 0, scoreRight: 0,
+    scoreLeft: 0, scoreRight: 0, // 킬 스코어 (게임당, 0~100)
+    setScoreLeft: 0, setScoreRight: 0, // 세트(시리즈) 스코어 — 예: Bo3의 1:1
+    bestOf: 1, // 1 | 3 | 5
     gameNum: 1,
     winner: null, // 'left' | 'right' | null — 오직 setWinner()로 컨트롤에서 수동 지정한다
     timerBaseSec: 0,
@@ -270,6 +300,7 @@
     timerStartedAtServer: null
   };
   let displayInterval = null;
+  renderBestOfButtons();
 
   // ---------- 로그인 ----------
   function doLogin() {
@@ -342,7 +373,16 @@
     document.getElementById('score-left').textContent = localState.scoreLeft;
     document.getElementById('score-right').textContent = localState.scoreRight;
     document.getElementById('game-num-display').textContent = localState.gameNum;
+    document.getElementById('set-score-left-display').textContent = localState.setScoreLeft;
+    document.getElementById('set-score-right-display').textContent = localState.setScoreRight;
+    renderBestOfButtons();
     renderWinnerStatus();
+  }
+
+  function renderBestOfButtons() {
+    [1,3,5].forEach(n => {
+      document.getElementById('bo-btn-' + n).classList.toggle('active', localState.bestOf === n);
+    });
   }
 
   function renderWinnerStatus() {
@@ -365,12 +405,39 @@
     pushState();
   }
 
-  // ---------- 스코어 ----------
+  // ---------- 킬 스코어 (게임당) ----------
   function changeScore(side, delta) {
     if (side === 'left') {
       localState.scoreLeft = Math.max(0, Math.min(100, localState.scoreLeft + delta));
     } else {
       localState.scoreRight = Math.max(0, Math.min(100, localState.scoreRight + delta));
+    }
+    renderScores();
+    pushState();
+  }
+
+  // 킬 스코어만 0:0으로 초기화 — 세트 스코어, gameNum, 타이머, winner 등 다른 값에는 영향 없음
+  function resetKillScore() {
+    localState.scoreLeft = 0;
+    localState.scoreRight = 0;
+    renderScores();
+    pushState();
+  }
+
+  // ---------- 경기 방식 (Bo1/Bo3/Bo5) ----------
+  function setBestOf(n) {
+    localState.bestOf = n;
+    renderScores();
+    pushState();
+  }
+
+  // ---------- 세트(시리즈) 스코어 — 예: Bo3에서 1:1. 킬 스코어와 완전히 별개로 관리 ----------
+  function changeSetScore(side, delta) {
+    const maxSets = Math.ceil((localState.bestOf || 1) / 2); // Bo3=2, Bo5=3, Bo1=1
+    if (side === 'left') {
+      localState.setScoreLeft = Math.max(0, Math.min(maxSets, localState.setScoreLeft + delta));
+    } else {
+      localState.setScoreRight = Math.max(0, Math.min(maxSets, localState.setScoreRight + delta));
     }
     renderScores();
     pushState();
@@ -450,6 +517,8 @@
     if (!confirm('전체 초기화하시겠습니까?')) return;
     localState.scoreLeft = 0;
     localState.scoreRight = 0;
+    localState.setScoreLeft = 0;
+    localState.setScoreRight = 0;
     localState.gameNum = 1;
     localState.winner = null;
     localState.timerBaseSec = 0;
