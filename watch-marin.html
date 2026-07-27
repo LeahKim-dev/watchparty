@@ -421,7 +421,7 @@
     const setL = data.setScoreLeft || 0;
     const setR = data.setScoreRight || 0;
     document.getElementById('best-of-sub').textContent = bestOf;
-    document.getElementById('series-format').textContent = 'BO' + bestOf + ' · ' + setL + ' : ' + setR;
+    document.getElementById('series-format').textContent = setL + ' : ' + setR;
 
     checkWinner(data.winner);
     startDisplayLoop();
