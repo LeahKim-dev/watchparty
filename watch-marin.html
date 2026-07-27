@@ -66,7 +66,7 @@
     margin-right: 8px;
     transition: background 0.3s;
   }
-  .conn-dot.live { background: #4dff88; }
+  .conn-dot.live { background: #d2d2d2; }
 
   .main-card {
     width: 100%;
@@ -108,10 +108,9 @@
     letter-spacing: -0.03em;
     transition: transform 0.15s ease;
   }
-  .series-num.pop { animation: popAnim 0.35s ease; }
-  @keyframes popAnim { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  .series-num.pop { animation: none; }
   .series-sep { font-size: 64px; color: var(--muted); font-weight: 300; }
-  .series-format { font-size: 16px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .series-format { font-size: 30px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
   .live-badge {
     display: flex; align-items: center; gap: 8px;
     font-size: 15px; color: #ff4d4d;
