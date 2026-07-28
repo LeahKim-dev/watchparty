@@ -4,11 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="page-title">2026 LoL KeSPA Cup</title>
-
+  
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
 
+  <meta name="version" content="1.9">
+
+  <script>
+    setInterval(function() {
+      // URL 뒤에 무작위 타임스탬프를 붙여 깃허브 캐시를 우회하여 최신 HTML을 강제로 조회합니다.
+      const cacheBuster = window.location.href.split('?')[0] + '?v=' + new Date().getTime();
+      
+      fetch(cacheBuster, { cache: "no-store" })
+        .then(response => response.text())
+        .then(htmlText => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(htmlText, "text/html");
+          
+          // 서버(깃허브)에 방금 올라간 최신 버전 확인
+          const serverVersion = doc.querySelector('meta[name="version"]')?.getAttribute('content');
+          // 시청자가 지금 브라우저에 켜놓고 있는 현재 버전 확인
+          const currentVersion = document.querySelector('meta[name="version"]')?.getAttribute('content');
+          
+          // 서버 버전과 현재 버전이 다르면 (즉, 내가 새로 배포했다면)
+          if (serverVersion && currentVersion && serverVersion !== currentVersion) {
+            console.log(`[배포 감지] 새 버전(v${serverVersion})이 확인되어 화면을 새로고침합니다.`);
+            window.location.reload(true); // 시청자 화면 강제 새로고침
+          }
+        })
+        .catch(err => console.log("버전 체크 중 오류 발생:", err));
+    }, 30000); // 30초마다 몰래 체크 (평소에는 화면 깜빡임이나 끊김이 전혀 없습니다)
+  </script>
 </head>
 <style>
   :root {
@@ -21,7 +46,7 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
+  
   body {
     background: var(--bg);
     color: var(--text);
@@ -34,6 +59,7 @@
     padding: 2rem 1.5rem;
   }
 
+  /* TOP BAR */
   .top-bar {
     width: 100%;
     max-width: 1060px;
@@ -45,6 +71,7 @@
   .event-pill {
     font-size: 24px;
     letter-spacing: 0.08em;
+    text-transform: none;
     color: var(--muted);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 24px;
@@ -58,16 +85,7 @@
   }
   #realtime { color: var(--text); font-weight: 500; }
 
-  .conn-dot {
-    display: inline-block;
-    width: 9px; height: 9px;
-    border-radius: 50%;
-    background: #ff4d4d;
-    margin-right: 8px;
-    transition: background 0.3s;
-  }
-  .conn-dot.live { background: #d2d2d2; }
-
+  /* MAIN CARD */
   .main-card {
     width: 100%;
     max-width: 1060px;
@@ -77,6 +95,7 @@
     overflow: hidden;
   }
 
+  /* MATCH HEADER */
   .match-header {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -88,18 +107,42 @@
 
   .team { display: flex; flex-direction: column; align-items: center; gap: 18px; }
 
+  /* 팀 배지 공통 */
   .team-badge {
     width: 120px; height: 120px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
   }
-  .team-badge img { width: 100%; height: 100%; object-fit: contain; }
-  .team-badge.has-bg img { object-fit: contain; padding: 8px; }
+  .team-badge img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+  }
+  /* 흰 배경 svg(kc)용 꽉 차게 깎는 처리 */
+  .team-badge.has-bg img {
+    object-fit: contain; 
+    padding: 8px;
+  }
 
   .team-name { font-size: 38px; font-weight: 700; }
   .team-region { font-size: 16px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 
+  .score-btn-group { display: flex; gap: 10px; margin-top: 8px; }
+  .btn-score {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 26px;
+    width: 54px; height: 54px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-score:hover { background: rgba(255,255,255,0.14); }
+  .btn-score:active { transform: scale(0.92); }
+
+  /* SCORE CENTER */
   .score-center { display: flex; flex-direction: column; align-items: center; gap: 12px; }
   .series-score { display: flex; align-items: center; gap: 18px; }
   .series-num {
@@ -108,17 +151,28 @@
     letter-spacing: -0.03em;
     transition: transform 0.15s ease;
   }
-  .series-num.pop { animation: none; }
+  .series-num.pop { animation: popAnim 0.35s ease; }
+  @keyframes popAnim {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
   .series-sep { font-size: 64px; color: var(--muted); font-weight: 300; }
-  .series-format { font-size: 30px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .series-format { font-size: 16px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
   .live-badge {
     display: flex; align-items: center; gap: 8px;
     font-size: 15px; color: #ff4d4d;
-    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    font-weight: 600; /* ????????? */
   }
-  .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #ff4d4d; animation: blink 1.4s ease-in-out infinite; }
+  .live-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #ff4d4d;
+    animation: blink 1.4s ease-in-out infinite;
+  }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
+  /* TIMER SECTION */
   .timer-section {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -126,28 +180,34 @@
     border-bottom: 1px solid var(--border);
     background: var(--border);
   }
-  .timer-box { background: var(--surface); padding: 2rem 3.5rem; display: flex; flex-direction: column; gap: 14px; }
-  .box-label { font-size: 22px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
-  .game-time-display { font-size: 82px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; color: var(--accent); line-height: 1; }
-  .game-num-display { font-size: 82px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+  .timer-box {
+    background: var(--surface);
+    padding: 2rem 3.5rem;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .box-label {
+    font-size: 22px; color: var(--muted);
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .game-time-display {
+    font-size: 82px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    color: var(--accent); line-height: 1;
+  }
+  .game-num-display {
+    font-size: 82px; font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1;
+  }
   .game-num-sub { font-size: 24px; color: var(--muted); }
-  .game-num-display .set-text { font-size: 0.65em; margin-left: 2px; font-weight: 500; }
-
-  .timer-btns { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
-  .btn-timer {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 10px; color: var(--text);
-    font-size: 18px; padding: 12px 24px;
-    cursor: pointer; transition: background 0.15s;
+  .game-num-display .set-text {
+    font-size: 0.65em;
+    margin-left: 2px;
     font-weight: 500;
   }
-  .btn-timer:hover { background: rgba(255,255,255,0.12); }
-  .btn-timer.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .btn-timer.primary:hover { background: #2a6aef; }
-  .btn-timer:active { transform: scale(0.96); }
-
-  .time-adjust { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .time-adjust {
+    display: flex; align-items: center; gap: 10px; margin-top: 6px;
+  }
   .time-input {
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.15);
@@ -167,61 +227,137 @@
     color: var(--accent);
     font-size: 18px; padding: 8px 20px;
     cursor: pointer; transition: background 0.15s;
-    font-weight: 500;
+    font-weight: 500; /*? */
   }
   .btn-set-time:hover { background: rgba(58,122,255,0.3); }
 
-  .footer { padding: 1.5rem 3.5rem; display: flex; align-items: center; justify-content: space-between; }
-  .footer-note { font-size: 22px; color: var(--muted); font-weight: 500; }
+  .timer-btns { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .btn-timer {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; color: var(--text);
+    font-size: 18px; padding: 12px 24px;
+    cursor: pointer; transition: background 0.15s;
+    font-weight: 500; /* ? */
+  }
+  .btn-timer:hover { background: rgba(255,255,255,0.12); }
+  .btn-timer.primary {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+  }
+  .btn-timer.primary:hover { background: #2a6aef; }
+  .btn-timer:active { transform: scale(0.96); }
 
+  /* FOOTER */
+  .footer {
+    padding: 1.5rem 3.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-note { font-size: 22px; color: var(--muted); font-weight: 500; }
+  .btn-reset {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; color: var(--muted);
+    font-size: 18px; padding: 10px 22px;
+    cursor: pointer; transition: all 0.15s;
+    font-weight: 500; /* ? */
+  }
+  .btn-reset:hover { color: var(--text); border-color: rgba(255,255,255,0.3); }
+
+  /* ─── 🎆 WINNER OVERLAY ─── */
   .winner-overlay {
     display: none;
     position: fixed; inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.4); /* 스크린 이외 공간 암전 극대화 */
     z-index: 1000;
-    align-items: center; justify-content: center;
+    align-items: center; 
+    justify-content: center;
   }
   .winner-overlay.show { display: flex; animation: fadeIn 0.3s ease; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
   .winner-container {
     position: relative;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     animation: zoomInCustom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) ease;
   }
   @keyframes zoomInCustom { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
   #winner-custom-img {
-    width: 100%; max-width: 1400px; height: 80vh;
-    object-fit: contain; border-radius: 4px;
-    box-shadow: 0 0 200px rgba(235, 16, 46, 0.5);
+    width: 100%;
+    max-width: 1400px;
+    height: 80vh;
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 0 200px rgba(235, 16, 46, 0.5); /* 네온 백라이트 강화 */
     display: block;
   }
 
   .winner-text-big {
-    position: static; text-align: center;
-    font-size: 64px; font-weight: 900; color: #ffffff;
+    /* 기본값: 사진 없이 텍스트만 뜰 때는 컨테이너 흐름 안에서 자연스럽게 중앙 정렬 */
+    position: static;
+    text-align: center;
+    font-size: 64px; /* 자막 더 선명하게 확대 */
+    font-weight: 900;
+    color: #ffffff;
     text-shadow: 0 4px 25px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,1), 0 0 15px rgba(235,16,46,1);
-    letter-spacing: -0.03em; padding: 0 40px; pointer-events: none; z-index: 10;
+    letter-spacing: -0.03em;
+    padding: 0 40px;
+    pointer-events: none;
+    z-index: 10;
   }
-  .winner-container.has-photo .winner-text-big { position: static; bottom: 50px; left: 0; width: 100%; }
 
-  .event-wrapper { display: flex; align-items: center; gap: 10px; }
+  /* 사진이 있을 때만: 사진 위 하단에 텍스트를 덧씌움 */
+  .winner-container.has-photo .winner-text-big {
+    position: static;
+    bottom: 50px;
+    left: 0;
+    width: 100%;
+  }
+
+  /* 이벤트 필과 대진표 버튼을 가로로 정렬 */
+  .event-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* 필과 버튼 사이의 간격 격차 */
+  }
+
+  /* 상단 탑바용 대진표 버튼 커스텀 스타일 */
   .btn-bracket-top {
-    margin: 0 !important; font-size: 24px; font-family: inherit;
-    letter-spacing: 0 !important; text-transform: uppercase; color: var(--muted);
-    border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
-    padding: 8px 6px !important; width: auto !important; cursor: pointer;
-    transition: all 0.2s ease; background: none;
+    margin: 0 !important;
+    font-size: 24px;
+    font-family: inherit;
+    letter-spacing: 0 !important;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 8px 6px !important;
+    width: auto !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
 
-  #bracket-overlay, #schedule-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0, 0, 0, 0.8); z-index: 10000;
-    align-items: center; justify-content: center;
+  /* 대진표 및 일정 모달 공통 스타일 */ 
+  #bracket-overlay, #schedule-overlay { 
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0, 0, 0, 0.8); 
+    z-index: 10000; 
+    align-items: center; 
+    justify-content: center; 
   }
-  #bracket-overlay.show, #schedule-overlay.show { display: flex; animation: fadeIn 0.3s ease; }
+
+  /* 모달 활성화 클래스 */
+  #bracket-overlay.show, #schedule-overlay.show {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+  }
 </style>
+</head>
 <body>
 
 <div class="winner-overlay" id="winner-overlay">
@@ -232,10 +368,13 @@
 </div>
 
 <div class="top-bar">
-  <div class="event-wrapper">
-    <div class="event-pill"><span class="conn-dot" id="conn-dot"></span>2026 LoL KeSPA Cup</div>
+  <div class="event-wrapper" style="display: flex; align-items: center; gap: 10px;">
+    <div class="event-pill">2026 LoL KeSPA Cup</div>
     <button class="btn-timer btn-bracket-top" onclick="openScheduleModal()">📅</button>
+    <div class="event-pill"><<달력 누르면 일정</div>
+    <!-- <button id="btn-bracket" class="btn-timer btn-bracket-top" onclick="openBracketModal()">대진표</button> -->
   </div>
+
   <div class="real-clock">KST&nbsp;<span id="realtime">--:--:--</span></div>
 </div>
 
@@ -251,11 +390,17 @@
 </div>
 
 <div class="main-card">
+  <!-- MATCH HEADER -->
   <div class="match-header">
+    <!-- 왼쪽 팀 -->
     <div class="team">
       <div class="team-badge" id="badge-left"></div>
       <div class="team-name" id="name-left">--</div>
       <div class="team-region" id="region-left">--</div>
+      <div class="score-btn-group">
+        <button class="btn-score" onclick="changeScore('left',-1)">−</button>
+        <button class="btn-score" onclick="changeScore('left',1)">+</button>
+      </div>
     </div>
 
     <div class="score-center">
@@ -264,94 +409,241 @@
         <span class="series-sep">:</span>
         <span class="series-num" id="set-right">0</span>
       </div>
-      <div class="series-format" id="series-format">0 : 0</div>
+      <div class="series-format">Best of 1</div>
       <div class="live-badge"><span class="live-dot"></span> Live</div>
     </div>
 
+    <!-- 오른쪽 팀 -->
     <div class="team">
       <div class="team-badge" id="badge-right"></div>
       <div class="team-name" id="name-right">--</div>
       <div class="team-region" id="region-right">--</div>
+      <div class="score-btn-group">
+        <button class="btn-score" onclick="changeScore('right',-1)">−</button>
+        <button class="btn-score" onclick="changeScore('right',1)">+</button>
+      </div>
     </div>
   </div>
 
+  <!-- TIMER + GAME NUM -->
   <div class="timer-section">
     <div class="timer-box">
       <div class="box-label">게임 타이머</div>
       <div class="game-time-display" id="game-timer">00:00</div>
-      <div class="timer-btns">
-        <button class="btn-timer primary" id="ov-btn-start" onclick="ovStartTimer()">▶ 시작</button>
-        <button class="btn-timer" onclick="ovPauseTimer()">⏸ 정지</button>
-        <button class="btn-timer" onclick="ovResetTimer()">↺ 초기화</button>
-      </div>
       <div class="time-adjust">
-        <input class="time-input" id="ov-input-min" type="number" min="0" max="99" value="0">
+        <input class="time-input" id="input-min" type="number" min="0" max="99" value="0">
         <span class="time-sep">:</span>
-        <input class="time-input" id="ov-input-sec" type="number" min="0" max="59" value="0">
-        <button class="btn-set-time" onclick="ovSetManualTime()">설정</button>
+        <input class="time-input" id="input-sec" type="number" min="0" max="59" value="0">
+        <button class="btn-set-time" onclick="setManualTime()">설정</button>
+      </div>
+      <div class="timer-btns">
+        <button class="btn-timer primary" id="btn-start" onclick="startTimer()">▶ 시작</button>
+        <button class="btn-timer" onclick="pauseTimer()">⏸ 정지</button>
+        <button class="btn-timer" onclick="resetTimer()">↺ 초기화</button>
       </div>
     </div>
     <div class="timer-box">
       <div class="box-label">현재 게임</div>
       <div class="game-num-display" id="game-num">1<span class="set-text">세트</span></div>
-      <div class="game-num-sub">Game <span id="game-num-sub">1</span> of <span id="best-of-sub">1</span></div>
+      <div class="game-num-sub">Game <span id="game-num-sub">1</span> of 1</div>
     </div>
   </div>
 
+  <!-- FOOTER -->
   <div class="footer">
     <div class="footer-note" id="winner-text"></div>
+    <button class="btn-reset" onclick="resetAll()">전체 초기화</button>
   </div>
 </div>
 
 <script>
-  // ==========================================
-  // 이 경기의 팀 매칭 + Firebase matchId — 경기마다 바꿔서 git push
-  // ==========================================
-  // teamLeft/teamRight는 더 이상 여기서 고정하지 않고 control.html에서 실시간으로 지정합니다.
-  let teamLeft = null;
-  let teamRight = null;
-  const matchId = 'live'; // 고정 채널 하나만 계속 재사용 — control.html에서도 동일하게 'live'로 연결
+  const teamLeft = 't1';
+  const teamRight = 'ns';
+  // 사용 가능한 키: 't1','geng','kt', 'dk', 'bro','ns','bfx', 'krx','hle','dns'
 
-  // Firebase 설정 — firebase-setup-guide.md 4번에서 받은 값으로 교체하세요
-  const firebaseConfig = {
-    apiKey: "AIzaSyC7TjpxZsNSutdKzcggoOAP-cZ2ygDjwiQ",
-    authDomain: "watch-party-21a6e.firebaseapp.com",
-    databaseURL: "https://watch-party-21a6e-default-rtdb.firebaseio.com",
-    projectId: "watch-party-21a6e",
-    storageBucket: "watch-party-21a6e.firebasestorage.app",
-    messagingSenderId: "416861431344",
-    appId: "1:416861431344:web:cbd747b34359c9077e2ff5"
-  };
-
+  // ==========================================
+  // 데이터 마스터 사전 (팀 정보 통합 관리)
+  // ==========================================
   const dbTeams = {
-      t1: { name: "T1", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/t1_logo.svg", hasBg: true, color: "#aa0025", bgStyle: "#111111", shadow: "rgba(200,16,46,0.4)", confetti: ['#aa0025','#ff6b6b','#ffffff'] },
-      geng: { name: "Gen.G", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/geng_logo.png", hasBg: true, color: "#a48528", bgStyle: "#fdfbfb", shadow: "rgba(164, 133, 40,0.4)", confetti: ['#a48528','#000000','#ffffff'] },
-      kt: { name: "KT", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/kt_logo.webp", hasBg: true, color: "#fc0014", bgStyle: "#fdfbfb", shadow: "rgba(245, 135, 147, 0.4)", confetti: ['#ff8a94','#fc0014','#ffffff'] },
-      dk: { name: "DK", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/dk_logo.png", hasBg: true, color: "#9efdf6", bgStyle: "#fdfbfb", shadow: "rgba(158, 253, 246,0.4)", confetti: ['#54d6ce','#9efdf6','#ffffff'] },
-      bro: { name: "BRO", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/brion_logo.png", hasBg: true, color: "#04492c", bgStyle: "#fdfbfb", shadow: "rgba(0,74,47,0.4)", confetti: ['#04492cbb','#6bd3a8','#ffffff'] },
-      ns: { name: "NS", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/ns_logo.svg", hasBg: true, color: "#e90029", bgStyle: "#fdfbfb", shadow: "rgba(253, 94, 99, 0.4)", confetti: ['#ff849a','#ffffff','#e90029'] },
-      bfx: { name: "BFX", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/bfx_logo.svg", hasBg: true, color: "#fdcf22", bgStyle: "#fdfbfb", shadow: "rgba(253, 207, 34, 0.4)", confetti: ['#fdcf22','#ffea9f','#ffffff'] },
-      krx: { name: "KRX", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/krx_logo.svg", hasBg: true, color: "#202e5c", bgStyle: "#fdfbfb", shadow: "rgba(94,148,212,0.4)", confetti: ['#4d60a1','#ffffff','#7389d1','#e2007f'] },
-      hle: { name: "HLE", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/hle_logo.svg", hasBg: true, color: "#f06f25", bgStyle: "#fdfbfb", shadow: "rgba(255,69,0,0.4)", confetti: ['#ff9a60', '#ffecac', '#ffffff'] },
-      dns: { name: "DNS", region: "LCK · Korea", logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/dns_logo.png", hasBg: true, color: "#2457ef", bgStyle: "#fdfbfb", shadow: "rgba(36, 87, 239,0.4)", confetti: ['#dbe4ff', '#85a3ff', '#ffffff'] },
-    };
+      t1: {
+        name: "T1",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/t1_logo.svg",
+        // winnerImgUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/t1/t1win_v6.jpg",
+        hasBg: true,
+        color: "#aa0025", 
+        bgStyle: "#111111",
+        shadow: "rgba(200,16,46,0.4)",
+        confetti: ['#aa0025','#ff6b6b','#ffffff']
+      },
+      geng: {
+        name: "Gen.G",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/geng_logo.png",
+        hasBg: true,
+        color: "#a48528", // 젠지 골드
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(164, 133, 40,0.4)",
+        confetti: ['#a48528','#000000','#ffffff']
+      },
+      kt: {
+        name: "KT Rolster",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/kt_logo.webp",
+        hasBg: true,
+        color: "#fc0014",
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(245, 135, 147, 0.4)",
+        confetti: ['#ff8a94','#fc0014','#ffffff']
+      },
+      dk: {
+        name: "Dplus KIA",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/dk_logo.png",
+        hasBg: true,
+        color: "#9efdf6",
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(158, 253, 246,0.4)",
+        confetti: ['#54d6ce','#9efdf6','#ffffff']
+      },
+      bro: {
+        name: "BRO",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/brion_logo.png",
+        hasBg: true,
+        color: "#04492c", // 브리온 그린
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(0,74,47,0.4)",
+        confetti: ['#04492cbb','#6bd3a8','#ffffff']
+      },
+      ns: {
+        name: "NS",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/ns_logo.svg",
+        hasBg: true,
+        color: "#e90029", // 농심 레드
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(253, 94, 99, 0.4)",
+        confetti: ['#ff849a','#ffffff','#e90029']
+      },
+      bfx: {
+        name: "BFX",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/bfx_logo.svg",
+        hasBg: true,
+        color: "#fdcf22", // 피어엑스 폭스 오렌지 (구 KRX 브랜드 변경 반영)
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(253, 207, 34, 0.4)",
+        confetti: ['#fdcf22','#ffea9f','#ffffff']
+      },
+      krx: {
+        name: "KRX",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/krx_logo.svg",
+        hasBg: true,
+        color: "#202e5c", // DRX 블루
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(94,148,212,0.4)",
+        confetti: ['#4d60a1','#ffffff','#7389d1','#e2007f']
+      },
+      hle: {
+        name: "HLE",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/hle_logo.svg",
+        hasBg: true,
+        color: "#f06f25",
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(255,69,0,0.4)",
+        confetti: ['#ff9a60', '#ffecac', '#ffffff']
+      },
+      dns: {
+        name: "DNS",
+        region: "LCK · Korea",
+        logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/dns_logo.png",
+        hasBg: true,
+        color: "#2457ef",
+        bgStyle: "#fdfbfb",
+        shadow: "rgba(36, 87, 239,0.4)",
+        confetti: ['#dbe4ff', '#85a3ff', '#ffffff']
+      },
+    // furia: {
+      //   name: "FURIA",
+      //   region: "CBLOL · Brazil",
+      //   logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/furia_logo.webp",
+      //   hasBg: true,
+      //   color: "#f5f39b",
+      //   bgStyle: "#fdfbfb",
+      //   shadow: "rgba(253, 252, 172, 0.29)",
+      //   confetti: ['#ffd86e', '#bfffd5', '#ffffff']
+      // },
+      // tsw: {
+      //   name: "TSW",
+      //   region: "LPL · China",
+      //   logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/tsw_logo.webp",
+      //   hasBg: true,
+      //   color: "#007fb9",
+      //   bgStyle: "#fdfbfb",
+      //   shadow: "#007eb96c",
+      //   confetti: ['#89d2fc9c','#a0dffc9c', '#e8f6fc']
+      // },
+      // lyon: {
+      //   name: "LYON",
+      //   region: "LCS · Mexico",
+      //   logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/lyon_logo.svg",
+      //   hasBg: true,
+      //   color: "#c09d76",
+      //   bgStyle: "#111111",
+      //   shadow: "rgba(210,180,140,0.4)",
+      //   confetti: ['#c09d76', '#4a3c31', '#ffffff']
+      // },
+      // g2: {
+      //   name: "G2",
+      //   region: "LEC · Europe",
+      //   logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/g2_logo.svg",
+      //   hasBg: true,
+      //   color: "#006400",
+      //   bgStyle: "#111111",
+      //   shadow: "rgba(0,100,0,0.4)",
+      //   confetti: ['#c7ebc7', '#4f924f', '#ffffff']
+      // },
+      // tes: {
+      //   name: "TES",
+      //   region: "LPL · China",
+      //   logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/tes_logo.webp",
+      //   hasBg: true,
+      //   color: "#ca2823",
+      //   bgStyle: "#fdfbfb",
+      //   shadow: "rgba(230,0,18,0.4)",
+      //   confetti: ['#ff7570', '#ffffff', '#ffd0d0']
+      // },
+      // blg: {
+      //   name: "BLG",
+      //   region: "LPL · China",
+      //   logoUrl: "https://raw.githubusercontent.com/LeahKim-dev/watchparty/main/src/teamlogo/blg_logo.svg",
+      //   hasBg: true,
+      //   color: "#F86F98",
+      //   bgStyle: "#fdfbfb",
+      //   shadow: "rgba(255,105,180,0.4)",
+      //   confetti: ['#8ae4f880', '#faa1bc77', '#ffffff']
+      // }
     
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+    };
 
+  // 실시간 점수 관리 변수
   let scoreLeft = 0, scoreRight = 0;
-  let serverTimeOffset = 0;
-  let currentState = { timerBaseSec: 0, timerRunning: false, timerStartedAtServer: null };
-  let displayInterval = null;
+  let timerSec = 0, timerRunning = false, timerInterval = null;
 
+// 화면 초기 세팅 빌더 함수
   function initLayout() {
-    if (!teamLeft || !teamRight) return; // 아직 컨트롤 패널에서 팀이 지정되지 않음 — 대기
     const leftData = dbTeams[teamLeft];
     const rightData = dbTeams[teamRight];
-    if(!leftData || !rightData) return console.warn("알 수 없는 팀 코드:", teamLeft, teamRight);
 
+    if(!leftData || !rightData) return alert("팀 설정 매칭 변수 오류!");
+
+    // 브라우저 타이틀 설정
     document.getElementById('page-title').textContent = `${leftData.name} vs ${rightData.name} — 26 KeSPA Cup`;
 
+    // 왼쪽 팀 렌더링
     document.getElementById('name-left').textContent = leftData.name;
     document.getElementById('region-left').textContent = leftData.region;
     const bLeft = document.getElementById('badge-left');
@@ -361,6 +653,7 @@
     bLeft.innerHTML = `<img src="${leftData.logoUrl}" alt="${leftData.name}">`;
     if(leftData.hasBg) bLeft.classList.add('has-bg');
 
+    // 오른쪽 팀 렌더링
     document.getElementById('name-right').textContent = rightData.name;
     document.getElementById('region-right').textContent = rightData.region;
     const bRight = document.getElementById('badge-right');
@@ -371,77 +664,54 @@
     if(rightData.hasBg) bRight.classList.add('has-bg');
   }
 
+  // 실행 호출
+  initLayout();
+
+  // 자릿수 보정 유틸
   function pad(n) { return String(n).padStart(2,'0'); }
 
+  // 상단 실제 클록 시계 고정
   function tick() {
     const now = new Date();
-    document.getElementById('realtime').textContent = pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+    document.getElementById('realtime').textContent =
+      pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
   }
   tick(); setInterval(tick, 1000);
 
-  // ---------- Firebase 연결 상태 ----------
-  db.ref('.info/connected').on('value', snap => {
-    document.getElementById('conn-dot').classList.toggle('live', snap.val() === true);
-  });
-
-  db.ref('.info/serverTimeOffset').on('value', snap => {
-    serverTimeOffset = snap.val() || 0;
-  });
-  function getServerNow() { return Date.now() + serverTimeOffset; }
-
-  // ---------- 실시간 상태 구독 (읽기 전용) ----------
-  db.ref('matches/' + matchId).on('value', snapshot => {
-    const data = snapshot.val();
-    if (!data) return;
-    currentState = data;
-    updateOvStartButtonLabel();
-
-    // 팀 매칭이 바뀌었을 때만 배지/이름을 다시 그림 (매번 새로 그리면 깜빡임 발생)
-    if (data.teamLeft && data.teamRight && (data.teamLeft !== teamLeft || data.teamRight !== teamRight)) {
-      teamLeft = data.teamLeft;
-      teamRight = data.teamRight;
-      initLayout();
-    }
-
-    const newLeft = data.scoreLeft || 0;
-    const newRight = data.scoreRight || 0;
-    if (newLeft !== scoreLeft) popScore('set-left');
-    if (newRight !== scoreRight) popScore('set-right');
-    scoreLeft = newLeft;
-    scoreRight = newRight;
-    document.getElementById('set-left').textContent = scoreLeft;
-    document.getElementById('set-right').textContent = scoreRight;
-
-    const gameNum = data.gameNum || 1; // gameNum은 control에서 점수와 무관하게 수동 조정되는 값 — 점수로 역산하지 않음
-    document.getElementById('game-num').innerHTML = gameNum + '<span class="set-text">세트</span>';
-    document.getElementById('game-num-sub').textContent = gameNum;
-
-    const bestOf = data.bestOf || 1;
-    const setL = data.setScoreLeft || 0;
-    const setR = data.setScoreRight || 0;
-    document.getElementById('best-of-sub').textContent = bestOf;
-    document.getElementById('series-format').textContent = setL + ' : ' + setR;
-
-    checkWinner(data.winner);
-    startDisplayLoop();
-  });
-
-  function computeCurrentTimerSec() {
-    if (currentState.timerRunning && currentState.timerStartedAtServer) {
-      const elapsed = Math.floor((getServerNow() - currentState.timerStartedAtServer) / 1000);
-      return (currentState.timerBaseSec || 0) + Math.max(0, elapsed);
-    }
-    return currentState.timerBaseSec || 0;
+  // 게임 타이머 디스플레이 인터페이스 업데이트
+  function updateTimerDisplay() {
+    document.getElementById('game-timer').textContent =
+      pad(Math.floor(timerSec/60))+':'+pad(timerSec%60);
+  }
+  function startTimer() {
+    if (timerRunning) return;
+    timerRunning = true;
+    document.getElementById('btn-start').textContent = '▶ 진행 중';
+    timerInterval = setInterval(()=>{ timerSec++; updateTimerDisplay(); }, 1000);
+  }
+  function pauseTimer() {
+    if (!timerRunning) return;
+    timerRunning = false;
+    clearInterval(timerInterval);
+    document.getElementById('btn-start').textContent = '▶ 재개';
+  }
+  function resetTimer() {
+    pauseTimer(); timerSec = 0; updateTimerDisplay();
+    document.getElementById('input-min').value = 0;
+    document.getElementById('input-sec').value = 0;
+    document.getElementById('btn-start').textContent = '▶ 시작';
+  }
+  function setManualTime() {
+    const m = parseInt(document.getElementById('input-min').value)||0;
+    const s = parseInt(document.getElementById('input-sec').value)||0;
+    const was = timerRunning;
+    pauseTimer();
+    timerSec = m*60 + Math.min(s,59);
+    updateTimerDisplay();
+    if (was) startTimer();
   }
 
-  function startDisplayLoop() {
-    if (displayInterval) clearInterval(displayInterval);
-    displayInterval = setInterval(() => {
-      const sec = computeCurrentTimerSec();
-      document.getElementById('game-timer').textContent = pad(Math.floor(sec/60))+':'+pad(sec%60);
-    }, 500);
-  }
-
+  // 스코어 팝 애니메이션 제어
   function popScore(id) {
     const el = document.getElementById(id);
     el.classList.remove('pop');
@@ -449,29 +719,39 @@
     el.classList.add('pop');
   }
 
-  // 승자 판정은 control.html에서만 수행하고, 여기서는 넘어온 data.winner('left'|'right'|null)를
-  // 그대로 표시만 한다. scoreLeft/scoreRight를 직접 비교하는 로직은 두지 않는다.
-  let lastShownWinner = null; // 같은 winner 상태로 스냅샷이 여러 번 와도 승리 연출을 반복 재생하지 않기 위함
+  // 실시간 세트 증감 핸들러
+  function changeScore(side, delta) {
+    if (side === 'left') {
+      scoreLeft = Math.max(0, Math.min(3, scoreLeft + delta));
+      document.getElementById('set-left').textContent = scoreLeft;
+      if (delta > 0) popScore('set-left');
+    } else {
+      scoreRight = Math.max(0, Math.min(3, scoreRight + delta));
+      document.getElementById('set-right').textContent = scoreRight;
+      if (delta > 0) popScore('set-right');
+    }
+    
+    const nextGame = Math.min(scoreLeft + scoreRight + 1, 5);
+    document.getElementById('game-num').innerHTML = nextGame + '<span class="set-text">세트</span>';
+    document.getElementById('game-num-sub').textContent = nextGame;
+    checkWinner();
+  }
 
-  function checkWinner(winner) {
+  // 위너 체크 인터페이스
+  function checkWinner() {
     const el = document.getElementById('winner-text');
-
-    if (winner === 'left' && dbTeams[teamLeft]) {
+    if (scoreLeft === 1) {
       el.textContent = `🏆 ${dbTeams[teamLeft].name} 승리!`;
-      if (lastShownWinner !== 'left') {
-        showWinner(dbTeams[teamLeft].name, dbTeams[teamLeft].confetti, dbTeams[teamLeft].winnerImgUrl);
-      }
-    } else if (winner === 'right' && dbTeams[teamRight]) {
+      showWinner(dbTeams[teamLeft].name, dbTeams[teamLeft].confetti, dbTeams[teamLeft].winnerImgUrl);
+    } else if (scoreRight === 1) {
       el.textContent = `🏆 ${dbTeams[teamRight].name} 승리!`;
-      if (lastShownWinner !== 'right') {
-        showWinner(dbTeams[teamRight].name, dbTeams[teamRight].confetti, dbTeams[teamRight].winnerImgUrl);
-      }
+      showWinner(dbTeams[teamRight].name, dbTeams[teamRight].confetti, dbTeams[teamRight].winnerImgUrl);
     } else {
       el.textContent = '';
     }
-    lastShownWinner = winner || null;
   }
 
+  // 위너 모달 오버레이 바인딩 + 폭죽 컬러 동적 할당
   function showWinner(name, colors, winnerCustomImg) {
     const overlay = document.getElementById('winner-overlay');
     const txt = document.getElementById('winner-text-big');
@@ -480,7 +760,9 @@
     if (img) {
       if (winnerCustomImg) {
         txt.style.opacity = "0";
-        img.onload = () => { txt.style.opacity = "1"; };
+        img.onload = () => {
+            txt.style.opacity = "1";
+        };
         img.src = winnerCustomImg;
         img.style.display = 'block';
         img.closest('.winner-container').classList.add('has-photo');
@@ -491,75 +773,120 @@
     }
 
     if (txt) {
-      const shadowColor = (Array.isArray(colors) && colors.length > 0) ? colors[0] : colors;
-      txt.style.textShadow = `0 4px 25px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,1), 0 0 15px ${shadowColor}`;
-      txt.textContent = '🏆 ' + name + ' WIN!';
-      if (overlay) overlay.classList.add('show');
+        const shadowColor = (Array.isArray(colors) && colors.length > 0) ? colors[0] : colors;
+        txt.style.textShadow = `0 4px 25px rgba(0,0,0,1), 0 0 40px rgba(0,0,0,1), 0 0 15px ${shadowColor}`;
 
+    txt.textContent = '🏆 ' + name + ' WIN!';
+    if (overlay) {
+        overlay.classList.add('show');
+    }
+
+    if (name === 'tsw') {
+      const duration = 6000;
+      const animationEnd = Date.now() + duration;
+
+      function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+      // 1. 양옆 대형 축포: 부드러운 곡선을 위해 gravity 낮추고 ticks(체공 시간) 늘림
+      const cannonInterval = setInterval(function() {
+        if (Date.now() > animationEnd) return clearInterval(cannonInterval);
+
+        confetti({
+          particleCount: 120, angle: 60, spread: 75, startVelocity: 80, gravity: 0.85, ticks: 300,
+          origin: { x: -0.1, y: 1 }, colors: colors, zIndex: 99999
+        });
+        confetti({
+          particleCount: 120, angle: 120, spread: 75, startVelocity: 80, gravity: 0.85, ticks: 300,
+          origin: { x: 1.1, y: 1 }, colors: colors, zIndex: 99999
+        });
+      }, 1000); // 1초 주기로 여유 있게 펑!
+
+      // 2. 메인 폭죽 & 눈송이: requestAnimationFrame 적용 (프레임 드랍 억제)
+      let frameId;
+      function frame() {
+        if (Date.now() > animationEnd) return;
+
+        // 사방에서 터지는 랜덤 불꽃
+        if (Math.random() < 0.04) {
+          confetti({
+            particleCount: 60, startVelocity: 25, spread: 360, ticks: 200, gravity: 0.6, zIndex: 99999,
+            colors: colors,
+            origin: { x: randomInRange(0.1, 0.9), y: randomInRange(0.1, 0.4) }
+          });
+        }
+
+        // 우아하게 떨어지는 금빛 눈송이 (천장에서 상시로 조금씩)
+        if (Math.random() < 0.15) {
+          confetti({
+            particleCount: 2, startVelocity: 0, ticks: 600, gravity: 0.5, scale: 1.2,
+            origin: { x: Math.random(), y: -0.1 },
+            colors: ['#FFD700', '#ffffff'],
+            drift: randomInRange(-0.8, 0.8),
+            zIndex: 99999
+          });
+        }
+
+        frameId = requestAnimationFrame(frame);
+      }
+      frame();
+
+      setTimeout(() => { 
+        overlay.classList.remove('show'); 
+        cancelAnimationFrame(frameId); // 애니메이션 깔끔하게 종료
+      }, 6500);
+
+    } else {
       const end = Date.now() + 4000;
       (function frame() {
         confetti({ particleCount: 6, angle: 60, spread: 55, origin:{x:0}, colors, zIndex: 99999 });
         confetti({ particleCount: 6, angle: 120, spread: 55, origin:{x:1}, colors, zIndex: 99999 });
         if (Date.now() < end) requestAnimationFrame(frame);
       })();
+      
       setTimeout(()=>{ overlay.classList.remove('show'); }, 4500);
+      }
+    }
+  }  
+    // [대진표 모달] 제어 함수
+    function openBracketModal() {
+      const bracketOverlay = document.getElementById('bracket-overlay');
+      if (bracketOverlay) {
+        bracketOverlay.classList.add('show');
+      }
+    }
+    
+  function closeBracketModal() {
+    const bracketOverlay = document.getElementById('bracket-overlay');
+    if (bracketOverlay) {
+      bracketOverlay.classList.remove('show');
     }
   }
 
-  function openBracketModal() { document.getElementById('bracket-overlay')?.classList.add('show'); }
-  function closeBracketModal() { document.getElementById('bracket-overlay')?.classList.remove('show'); }
-  function openScheduleModal() { document.getElementById('schedule-overlay')?.classList.add('show'); }
-  function closeScheduleModal() { document.getElementById('schedule-overlay')?.classList.remove('show'); }
-
-  // ---------- 타이머 조작 (로그인 없이 오버레이에서 바로 가능) ----------
-  // Security Rules가 write: true (공개 쓰기)로 설정돼 있어야 동작합니다.
-  const matchRef = db.ref('matches/' + matchId);
-
-  function ovStartTimer() {
-    if (currentState.timerRunning) return;
-    matchRef.update({
-      timerRunning: true,
-      timerStartedAtServer: getServerNow()
-    });
+  // [일정표 모달] 제어 함수 (새로 보완 완료!)
+  function openScheduleModal() {
+    const scheduleOverlay = document.getElementById('schedule-overlay');
+    if (scheduleOverlay) {
+      scheduleOverlay.classList.add('show');
+    }
   }
 
-  function ovPauseTimer() {
-    if (!currentState.timerRunning) return;
-    matchRef.update({
-      timerBaseSec: computeCurrentTimerSec(),
-      timerRunning: false,
-      timerStartedAtServer: null
-    });
+  function closeScheduleModal() {
+    const scheduleOverlay = document.getElementById('schedule-overlay');
+    if (scheduleOverlay) {
+      scheduleOverlay.classList.remove('show');
+    }
   }
 
-  function ovResetTimer() {
-    matchRef.update({
-      timerBaseSec: 0,
-      timerRunning: false,
-      timerStartedAtServer: null
-    });
-    document.getElementById('ov-input-min').value = 0;
-    document.getElementById('ov-input-sec').value = 0;
-  }
-
-  function ovSetManualTime() {
-    const m = parseInt(document.getElementById('ov-input-min').value) || 0;
-    const s = parseInt(document.getElementById('ov-input-sec').value) || 0;
-    const wasRunning = currentState.timerRunning;
-    matchRef.update({
-      timerBaseSec: m*60 + Math.min(s,59),
-      timerRunning: false,
-      timerStartedAtServer: null
-    }).then(() => {
-      if (wasRunning) ovStartTimer();
-    });
-  }
-
-  // 타이머 진행 상태에 맞춰 "시작" 버튼 라벨 갱신
-  function updateOvStartButtonLabel() {
-    const btn = document.getElementById('ov-btn-start');
-    if (!btn) return;
-    btn.textContent = currentState.timerRunning ? '▶ 진행 중' : '▶ 시작';
+  // 전체 초기화 (버그 수정 완비)
+  function resetAll() {
+    if (!confirm('전체 초기화하시겠습니까?')) return;
+    scoreLeft = 0; scoreRight = 0;
+    document.getElementById('set-left').textContent = 0;
+    document.getElementById('set-right').textContent = 0;
+    document.getElementById('game-num').textContent = 1;
+    document.getElementById('game-num-sub').textContent = 1;
+    document.getElementById('winner-text').textContent = '';
+    resetTimer();
   }
 </script>
 </body>
